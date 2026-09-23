@@ -225,19 +225,10 @@
       fireworks.push(new Firework(startX, startY, targetX, targetY));
     }
 
-    // Eventos Táctiles y Ratón
+    // Eventos Táctiles y Ratón (Sólo se activa al tocar)
     window.addEventListener('pointerdown', (e) => {
       launchFirework(e.clientX, e.clientY);
     });
-
-    // Explosiones automáticas esporádicas
-    setInterval(() => {
-      if (Math.random() > 0.4) {
-        const randomX = Math.random() * (width * 0.8) + width * 0.1;
-        const randomY = Math.random() * (height * 0.5) + height * 0.1;
-        launchFirework(randomX, randomY);
-      }
-    }, 1500);
 
     // Bucle de animación principal
     function animate() {
