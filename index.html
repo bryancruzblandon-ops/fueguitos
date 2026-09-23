@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuegos Artificiales para Ti ❤️✨</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #020617;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      color: #fff;
+      touch-action: manipulation;
+    }
+
+    h1 {
+      position: absolute;
+      top: 35px;
+      font-size: 1.4rem;
+      color: #f472b6;
+      text-shadow: 0 0 15px rgba(244, 114, 182, 0.8), 0 0 30px rgba(236, 72, 153, 0.4);
+      text-align: center;
+      padding: 0 20px;
+      z-index: 10;
+      pointer-events: none;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at 50% 100%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+    }
+
+    .instructions {
+      position: absolute;
+      bottom: 25px;
+      font-size: 0.9rem;
+      color: #fbcfe8;
+      opacity: 0.85;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+      text-shadow: 0 0 8px rgba(244, 114, 182, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>¡Cada explosión es un pensamiento en ti! ✨❤️</h1>
+  <canvas id="fireworksCanvas"></canvas>
+  <div class="instructions">Toca la pantalla para lanzar un cohete de corazón 🚀🎆</div>
+
+  <script>
+    const canvas = document.getElementById('fireworksCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Paleta de colores neón / fosforescentes
+    const neonColors = [
+      '#ff0055', '#ff5083', '#ff00aa', '#00f0ff',
+      '#00ff66', '#ffea00', '#ff0033', '#b026ff',
+      '#39ff14', '#ff007f', '#00e5ff', '#ff9900'
+    ];
+
+    // Fondo de estrellas estáticas que titilan
+    const stars = [];
+    for (let i = 0; i < 120; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.8 + 0.2,
+        speed: Math.random() * 0.03 + 0.01
+      });
+    }
+
+    const fireworks = [];
+    const particles = [];
+
+    // Clase Cohete
+    class Firework {
+      constructor(startX, startY, targetX, targetY) {
+        this.x = startX;
+        this.y = startY;
+        this.startX = startX;
+        this.startY = startY;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        
+        this.distanceToTarget = Math.hypot(targetX - startX, targetY - startY);
+        this.distanceTraveled = 0;
+        
+        this.coordinates = [];
+        this.coordinateCount = 3;
+        while (this.coordinateCount--) {
+          this.coordinates.push([this.x, this.y]);
+        }
+        
+        this.angle = Math.atan2(targetY - startY, targetX - startX);
+        this.speed = 12;
+        this.friction = 0.99;
+        this.hue = neonColors[Math.floor(Math.random() * neonColors.length)];
+      }
+
+      update(index) {
+        this.coordinates.pop();
+        this.coordinates.unshift([this.x, this.y]);
+
+        this.speed *= this.friction;
+        const vx = Math.cos(this.angle) * this.speed;
+        const vy = Math.sin(this.angle) * this.speed;
+
+        this.distanceTraveled = Math.hypot(this.x - this.startX, this.y - this.startY);
+
+        if (this.distanceTraveled >= this.distanceToTarget) {
+          createHeartExplosion(this.targetX, this.targetY, this.hue);
+          fireworks.splice(index, 1);
+        } else {
+          this.x += vx;
+          this.y += vy;
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+        ctx.lineTo(this.x, this.y);
+        ctx.strokeStyle = this.hue;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = this.hue;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+      }
+    }
+
+    // Clase Partícula de la Explosión en Corazón
+    class Particle {
+      constructor(x, y, targetX, targetY, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        
+        this.vx = targetX * (Math.random() * 1.5 + 2.5);
+        this.vy = targetY * (Math.random() * 1.5 + 2.5);
+        
+        this.friction = 0.95;
+        this.gravity = 0.08;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.008;
+        this.size = Math.random() * 2.5 + 1.5;
+      }
+
+      update(index) {
+        this.vx *= this.friction;
+        this.vy *= this.friction;
+        this.vy += this.gravity;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        this.alpha -= this.decay;
+
+        if (this.alpha <= this.decay) {
+          particles.splice(index, 1);
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 12;
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Función para calcular coordenadas Cardioide (Corazón)
+    function createHeartExplosion(centerX, centerY, color) {
+      const particleCount = 110;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 2;
+        
+        // Ecuación matemática de la curva del corazón
+        const heartX = 16 * Math.pow(Math.sin(angle), 3);
+        const heartY = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
+
+        // Normalizar velocidad
+        const dirX = heartX / 16;
+        const dirY = heartY / 16;
+
+        particles.push(new Particle(centerX, centerY, dirX, dirY, color));
+      }
+    }
+
+    // Lanzar cohete a la posición deseada
+    function launchFirework(targetX, targetY) {
+      const startX = width / 2 + (Math.random() - 0.5) * (width * 0.5);
+      const startY = height;
+      fireworks.push(new Firework(startX, startY, targetX, targetY));
+    }
+
+    // Eventos Táctiles y Ratón
+    window.addEventListener('pointerdown', (e) => {
+      launchFirework(e.clientX, e.clientY);
+    });
+
+    // Explosiones automáticas esporádicas
+    setInterval(() => {
+      if (Math.random() > 0.4) {
+        const randomX = Math.random() * (width * 0.8) + width * 0.1;
+        const randomY = Math.random() * (height * 0.5) + height * 0.1;
+        launchFirework(randomX, randomY);
+      }
+    }, 1500);
+
+    // Bucle de animación principal
+    function animate() {
+      // Estela suave de fondo
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.2)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar estrellas
+      stars.forEach(s => {
+        s.alpha += Math.sin(Date.now() * s.speed) * 0.01;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(s.alpha)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Actualizar cohetes
+      let i = fireworks.length;
+      while (i--) {
+        fireworks[i].draw();
+        fireworks[i].update(i);
+      }
+
+      // Actualizar partículas
+      let j = particles.length;
+      while (j--) {
+        particles[j].draw();
+        particles[j].update(j);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
